@@ -1,0 +1,27 @@
+.content {
+    background-color: white;
+    min-height: 200px;
+    margin: 16px;
+    margin-left: 32px;
+    padding: 30px;
+}
+
+.submit-week-utilities {
+    display: flex;
+}
+
+.submit-week-utilities p{
+    font-size: 2rem;
+}
+
+mat-card-header {
+    justify-content: space-between;
+}
+table{
+    width: 100%;
+}
+table, tr, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+  }
+
