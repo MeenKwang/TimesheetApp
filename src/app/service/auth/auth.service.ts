@@ -53,8 +53,9 @@ export class AuthService {
     return this.httpClient.post(this.base_url + "login", auth, { headers: this.loginHeader })
   }
 
-  refreshToken(refreshToken: RefreshTokenDto) {
-    return this.httpClient.post(this.base_url + "refresh_token", refreshToken, { headers: this.loginHeader })
+  refreshToken(refreshTokenBody: RefreshTokenDto) {
+    console.log("Jump into refreshToken")
+    return this.httpClient.post(this.base_url + "refresh_token", refreshTokenBody, { headers: this.loginHeader })
   }
 
   signOut() {

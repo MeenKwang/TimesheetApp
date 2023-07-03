@@ -56,6 +56,7 @@ export class AuthInterceptor implements HttpInterceptor {
   }
 
   private handle401ErrorHappenedByToken(request: HttpRequest<any>, next: HttpHandler) {
+    console.log(this.cookieService.get("TimesheetAppToken"));
     if (!this.isRefreshing) {
       this.isRefreshing = true;
       //lam moi

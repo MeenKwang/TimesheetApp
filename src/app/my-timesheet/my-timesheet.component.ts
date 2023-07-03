@@ -6,6 +6,10 @@ import { MatTabChangeEvent } from '@angular/material/tabs';
 import { TimesheetService } from '../service/timesheet/timesheet.service';
 import { MatDialog } from '@angular/material/dialog';
 import { TimesheetDialogComponent } from './timesheet-dialog/timesheet-dialog.component';
+import { CookieService } from 'ngx-cookie-service';
+import { NoteViewDto } from '../model/note-view-dto';
+import { BehaviorSubject, switchMap } from 'rxjs';
+import { NotesPerDayDto } from '../model/notes-per-day-dto';
 
 const MY_DATE_FORMAT = {
   parse: {
@@ -31,128 +35,161 @@ const MY_DATE_FORMAT = {
 })
 export class MyTimesheetComponent implements OnInit {
 
-  daysArray = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  daysArraySummary = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  daysArray = [{ label: 'Monday', value: 1 }, { label: 'Tuesday', value: 2 }, { label: 'Wednesday', value: 3 }, { label: 'Thursday', value: 4 }, { label: 'Friday', value: 5 }, { label: 'Saturday', value: 6 }, { label: 'Sunday', value: 0 }];
+  daysArraySummary = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   monthsArray = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   selectedDate = new Date();
   selectedDay = this.selectedDate.getDay();
-  selectedMonthSummary! : number | any;
-  dateString : String = '';
-  dates : Date[] = [];
+  selectedDayIndex = this.getSelectedDayIndex();
+  selectedMonthSummary!: number | any;
+  dateString: String = '';
+  dates: Date[] = [];
 
-  displayedColumns: string[] = ['position', 'name', 'weight', 'symbol'];
+  notesPerDayDtos: NotesPerDayDto[] = [];
 
-  animal!: string;
-  name!: string;
+  name: string = "Quang";
 
-  timeSheet : any = null;
+  weekNumber: number = this.getWeekNumberOfSelectedDate(new Date());
 
   constructor(
-    private timesheetService : TimesheetService,
-    public dialog: MatDialog
+    private timesheetService: TimesheetService,
+    public dialog: MatDialog,
+    private cookieService: CookieService
   ) { }
 
   ngOnInit(): void {
     this.selectedMonthSummary = this.selectedDate.getMonth();
     this.dates = this.getAllDatesInMonth(this.selectedDate.getFullYear(), this.selectedDate.getMonth());
-    this.timesheetService.getTimesheetByWeek(1, this.getWeekNumberOfSelectedDate(this.selectedDate)).subscribe({
-      next : (response) => {
-        console.log(response);
-        this.timeSheet = response;
-      },
-      error : (error) => {
+    this.loadTimesheet();
+  }
 
+  loadTimesheet() {
+    this.timesheetService.getTimesheetByWeek(this.cookieService.get("TimesheetAppUsername"), this.getWeekNumberOfSelectedDate(this.selectedDate)).subscribe({
+      next: (response: any) => {
+        this.notesPerDayDtos = response;
       },
-      complete : () => {}
+      error: (error) => {
+        console.log(error);
+      },
+      complete: () => { }
     });
   }
 
-  getDay(date : Date) {
+  getNotesPerDay(index : any) {
+    console.log(index);
+    // for(let item of this.notesPerDayDtos) {
+    //   let date : Date = new Date(item.dateSubmit[0], item.dateSubmit[1], item.dateSubmit[2]);
+      
+    //   if(date == this.selectedDate) {
+    //     return item.lst;
+    //   }
+    // }
+    // return [];
+  }
+
+  wtf() {
+    console.log("WTF")
+  }
+
+  getSelectedDayIndex(): number {
+    let index = this.selectedDay - 1;
+    if (index < 0) index = 6;
+    return index;
+  }
+
+  getDay(date: Date) {
     return date.getDay();
   }
 
-  getDate(date : Date) {
+  getDate(date: Date) {
     return date.getDate();
   }
 
-  getMonth(date : Date) {
+  getMonth(date: Date) {
     return date.getMonth();
   }
 
-  getYear(date : Date) {
+  getYear(date: Date) {
     return date.getFullYear();
   }
 
-  getWeekNumberOfSelectedDate(date : Date) {
+  getWeekNumberOfSelectedDate(date: Date) {
     let startDate = new Date(date.getFullYear(), 0, 1);
     var days = Math.floor((date.valueOf() - startDate.valueOf()) / (24 * 60 * 60 * 1000));
-    
     var weekNumber = Math.ceil(days / 7);
     return weekNumber;
   }
 
-  getWeekNumberAndUpdateDay(date : any) {
-    // let currentYear = date.getFullYear();
-    console.log(date);
+  getWeekNumberAndUpdateDay(date: any) {
     this.selectedDate = date.toDate();
-    console.log(this.selectedDate);
-    let startDate = new Date(date._i.year, 0, 1);
-    var days = Math.floor((date.valueOf() - startDate.valueOf()) / (24 * 60 * 60 * 1000));
-    
-    var weekNumber = Math.ceil(days / 7);
-    
-    // Display the calculated result      
-    console.log("Week number is : " + weekNumber);
-
     this.selectedDay = date._d.getDay();
-    console.log(this.selectedDay);
+    this.selectedDayIndex = this.getSelectedDayIndex();
+    this.checkLoadTimesheet();
   }
 
   getAllDatesInMonth(year: number, month: number): Date[] {
     const firstDayOfMonth = new Date(year, month, 1);
     const lastDayOfMonth = new Date(year, month + 1, 0);
-  
+
     const dates = [];
-  
+
     for (let date = firstDayOfMonth; date <= lastDayOfMonth; date.setDate(date.getDate() + 1)) {
       dates.push(new Date(date));
     }
-  
+
     return dates;
   }
 
   returnCurrentDay() {
     this.selectedDate = new Date();
     this.selectedDay = this.selectedDate.getDay();
+    this.selectedDayIndex = this.getSelectedDayIndex();
+    this.checkLoadTimesheet();
   }
 
   minusOneDay() {
     this.selectedDate = new Date(this.selectedDate.setDate(this.selectedDate.getDate() - 1));
     this.selectedDay = this.selectedDate.getDay();
+    this.selectedDayIndex = this.getSelectedDayIndex();
+    this.checkLoadTimesheet();
   }
 
   plusOneDay() {
     this.selectedDate = new Date(this.selectedDate.setDate(this.selectedDate.getDate() + 1));
     this.selectedDay = this.selectedDate.getDay();
+    this.selectedDayIndex = this.getSelectedDayIndex();
+    this.checkLoadTimesheet();
   }
 
-  returnSelectedDate(index : number) {
-    let difference = this.selectedDate.getDay() - index;
+  returnSelectedDate(event: MatTabChangeEvent) {
+    console.log("Jump into returnSelectedDate");
+    if (event.index === 7) return;
+    let dayNum = this.selectedDate.getDay();
+    if (dayNum === 0) dayNum = 7;
+    let difference = dayNum - 1 - event.index;
     this.selectedDate = new Date(this.selectedDate.setDate(this.selectedDate.getDate() - difference));
-    console.log(this.selectedDate);
     this.selectedDay = this.selectedDate.getDay();
+    this.selectedDayIndex = this.getSelectedDayIndex();
+    this.checkLoadTimesheet();
   }
 
   showTimesheetForm() {
     const dialogRef = this.dialog.open(TimesheetDialogComponent, {
-      data: {name: this.name, animal: this.animal},
+      data: { name: this.name },
     });
 
     dialogRef.afterClosed().subscribe(result => {
       console.log('The dialog was closed');
-      this.animal = result;
     });
+  }
+
+  checkLoadTimesheet() {
+    if (this.weekNumber !== this.getWeekNumberOfSelectedDate(this.selectedDate)) {
+      console.log("jump into check load timesheet!")
+      this.weekNumber = this.getWeekNumberOfSelectedDate(this.selectedDate);
+      this.loadTimesheet();
+    }
   }
 
 }
