@@ -1,5 +1,5 @@
 
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 import { MomentDateAdapter } from '@angular/material-moment-adapter';
 import { DateAdapter, MAT_DATE_FORMATS, MAT_DATE_LOCALE } from '@angular/material/core';
 import { MatTabChangeEvent } from '@angular/material/tabs';
@@ -33,7 +33,7 @@ const MY_DATE_FORMAT = {
     { provide: MAT_DATE_FORMATS, useValue: MY_DATE_FORMAT }
   ]
 })
-export class MyTimesheetComponent implements OnInit {
+export class MyTimesheetComponent implements OnInit, OnChanges {
 
   daysArray = [{ label: 'Monday', value: 1 }, { label: 'Tuesday', value: 2 }, { label: 'Wednesday', value: 3 }, { label: 'Thursday', value: 4 }, { label: 'Friday', value: 5 }, { label: 'Saturday', value: 6 }, { label: 'Sunday', value: 0 }];
   daysArraySummary = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -57,11 +57,15 @@ export class MyTimesheetComponent implements OnInit {
     public dialog: MatDialog,
     private cookieService: CookieService
   ) { }
+  ngOnChanges(changes: SimpleChanges): void {
+    console.log("Jump to onChanges");
+  }
 
   ngOnInit(): void {
     this.selectedMonthSummary = this.selectedDate.getMonth();
     this.dates = this.getAllDatesInMonth(this.selectedDate.getFullYear(), this.selectedDate.getMonth());
     this.loadTimesheet();
+    console.log("init ok");
   }
 
   loadTimesheet() {
@@ -77,19 +81,15 @@ export class MyTimesheetComponent implements OnInit {
   }
 
   getNotesPerDay(index : any) {
-    console.log(index);
-    // for(let item of this.notesPerDayDtos) {
-    //   let date : Date = new Date(item.dateSubmit[0], item.dateSubmit[1], item.dateSubmit[2]);
-      
-    //   if(date == this.selectedDate) {
-    //     return item.lst;
-    //   }
-    // }
-    // return [];
-  }
-
-  wtf() {
-    console.log("WTF")
+    for(let item of this.notesPerDayDtos) {
+      let date : Date = new Date(item.dateSubmit[0], item.dateSubmit[1] - 1, item.dateSubmit[2]);
+      let dateNumber = date.getDay();
+      let currentSelectedDateNumber = this.daysArray[index].value; 
+      if(dateNumber == currentSelectedDateNumber && item !== null) {
+        return item;
+      }
+    }
+    return null;
   }
 
   getSelectedDayIndex(): number {
@@ -163,7 +163,6 @@ export class MyTimesheetComponent implements OnInit {
   }
 
   returnSelectedDate(event: MatTabChangeEvent) {
-    console.log("Jump into returnSelectedDate");
     if (event.index === 7) return;
     let dayNum = this.selectedDate.getDay();
     if (dayNum === 0) dayNum = 7;
@@ -174,22 +173,34 @@ export class MyTimesheetComponent implements OnInit {
     this.checkLoadTimesheet();
   }
 
-  showTimesheetForm() {
-    const dialogRef = this.dialog.open(TimesheetDialogComponent, {
-      data: { name: this.name },
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      console.log('The dialog was closed');
-    });
-  }
-
   checkLoadTimesheet() {
     if (this.weekNumber !== this.getWeekNumberOfSelectedDate(this.selectedDate)) {
-      console.log("jump into check load timesheet!")
       this.weekNumber = this.getWeekNumberOfSelectedDate(this.selectedDate);
       this.loadTimesheet();
     }
+  }
+
+  showTimesheetForm(item : number | undefined) {
+    this.timesheetService.getEmployeeId().subscribe({
+      next: (response) => {
+        const dialogRef = this.dialog.open(TimesheetDialogComponent, {
+          data: { noteId : item , employeeId : response },
+        });
+    
+        dialogRef.afterClosed().subscribe(result => {
+          console.log("Dialog closed!");
+        });
+        
+      },
+      error: (error) => {
+        console.log(error);
+        return;
+      }
+    });
+  }
+
+  showDeleteNotify() {
+    
   }
 
 }

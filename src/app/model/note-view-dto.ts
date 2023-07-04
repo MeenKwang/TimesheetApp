@@ -5,4 +5,5 @@ export interface NoteViewDto {
     noteDescription?: string;
     workingTime?: string;
     dateSubmit?: number[];
+    status?: string;
 }

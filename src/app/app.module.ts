@@ -41,6 +41,7 @@ import { ForbiddenComponent } from './forbidden/forbidden.component';
       provide: DateAdapter,
       useFactory: adapterFactory,
     }),
+    ReactiveFormsModule
   ],
   providers: [
     CookieService,

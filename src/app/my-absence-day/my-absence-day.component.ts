@@ -27,7 +27,6 @@ import {
 import { EventColor } from 'calendar-utils';
 import { NgIf } from '@angular/common';
 import { MatDialogModule, MAT_DIALOG_DATA, MatDialog } from '@angular/material/dialog';
-import { DialogData } from '../my-timesheet/timesheet-dialog/timesheet-dialog.component';
 
 const colors: Record<string, EventColor> = {
   red: {
@@ -143,11 +142,6 @@ export class MyAbsenceDayComponent implements OnInit {
       }
       this.viewDate = date;
     }
-    this.dialog.open(DialogDataExampleDialog, {
-      data: {
-        animal: 'panda',
-      },
-    });
   }
 
   eventTimesChanged({
@@ -200,14 +194,4 @@ export class MyAbsenceDayComponent implements OnInit {
   closeOpenMonthViewDay() {
     this.activeDayIsOpen = false;
   }
-}
-
-@Component({
-  selector: 'dialog-data-example-dialog',
-  templateUrl: 'dialog-data-example-dialog.html',
-  standalone: true,
-  imports: [MatDialogModule, NgIf],
-})
-export class DialogDataExampleDialog {
-  constructor(@Inject(MAT_DIALOG_DATA) public data: DialogData) {}
 }
