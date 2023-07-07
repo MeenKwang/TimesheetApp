@@ -9,7 +9,8 @@ export interface NoteFormDto {
     workingTime?: number,
     workingType?: WorkingType,
     dateSubmit?: Date,
-    status?: TimeSheetStatus
+    dateModify?: Date,
+    status?: TimeSheetStatus,
 }
 
 

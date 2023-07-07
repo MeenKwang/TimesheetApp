@@ -18,6 +18,9 @@ import { adapterFactory } from 'angular-calendar/date-adapters/date-fns';
 import { CookieService } from 'ngx-cookie-service';
 import { AuthInterceptor } from './auth/auth.interceptor';
 import { ForbiddenComponent } from './forbidden/forbidden.component';
+import { ConfirmDialogComponent } from './my-timesheet/confirm-dialog/confirm-dialog.component';
+import { AbsenceDialogComponent } from './my-absence-day/absence-dialog/absence-dialog.component';
+import { AbsenceFormDialogComponent } from './my-absence-day/absence-form-dialog/absence-form-dialog.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -27,6 +30,9 @@ import { ForbiddenComponent } from './forbidden/forbidden.component';
     LoginComponent,
     HomeComponent,
     ForbiddenComponent,
+    ConfirmDialogComponent,
+    AbsenceDialogComponent,
+    AbsenceFormDialogComponent,
   ],
   imports: [
     BrowserModule,

@@ -37,7 +37,6 @@ export class TimesheetDialogComponent implements OnInit {
   timesheetForm!: FormGroup;
   projectSelectDtoList!: ProjectSelectDto[];
   taskSelectDtoList!: TaskSelectDto[];
-  title: string = '';
   workingTypes = WorkingType;
   noteFormDto: NoteFormDto = {};
 
@@ -46,7 +45,6 @@ export class TimesheetDialogComponent implements OnInit {
     @Inject(MAT_DIALOG_DATA) public data: any,
     private formBuilder: FormBuilder,
     private timesheetService: TimesheetService,
-    private cookieService: CookieService,
   ) { }
 
   ngOnInit(): void {
@@ -115,7 +113,7 @@ export class TimesheetDialogComponent implements OnInit {
   submitForm() {
     if(this.data.noteId === undefined) {
       this.noteFormDto.employeeId = this.data.employeeId;
-      this.noteFormDto.dateSubmit = new Date();
+      this.noteFormDto.dateSubmit = this.data.selectedDate;
       this.noteFormDto.status = TimeSheetStatus.NEW;
     }
     this.noteFormDto.projectId = this.timesheetForm.controls["projectId"].value;
@@ -123,6 +121,7 @@ export class TimesheetDialogComponent implements OnInit {
     this.noteFormDto.noteDescription = this.timesheetForm.controls["note"].value;
     this.noteFormDto.workingTime = this.timesheetForm.controls["workingTime"].value;
     this.noteFormDto.workingType = this.timesheetForm.controls["workingType"].value;
+    this.noteFormDto.dateModify = new Date();
     console.log(this.noteFormDto);
     this.timesheetService.saveTimesheet(this.noteFormDto).subscribe({
       next : (response) => {

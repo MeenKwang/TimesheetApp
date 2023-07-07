@@ -1,7 +1,10 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { CheckInDto } from 'src/app/model/check-in-dto';
+import { CheckInRequestDto } from 'src/app/model/check-in-request-dto';
 import { NoteFormDto } from 'src/app/model/note-form-dto';
+import { NoteSummaryRequestDto } from 'src/app/model/note-summary-request-dto';
 import { NotesPerDayDto } from 'src/app/model/notes-per-day-dto';
 import { ProjectSelectDto } from 'src/app/model/project-select-dto';
 import { TaskSelectDto } from 'src/app/model/task-select-dto';
@@ -35,6 +38,7 @@ export class TimesheetService {
   }
 
   public getTimesheetById(noteId: number) : Observable<NoteFormDto> {
+    console.log(noteId);
     let params : HttpParams = new HttpParams();
     params = params.append("noteId", noteId);
     return this.httpClient.get(this.base_url + "notes/note_by_id", { params : params }).pipe();
@@ -46,6 +50,38 @@ export class TimesheetService {
 
   public getEmployeeId() : Observable<any> {
     return this.httpClient.get(this.base_url + "employees/employee_id").pipe();
+  }
+
+  public deleteTimesheet(noteId : number) : Observable<any> {
+    console.log(noteId);
+    let params : HttpParams = new HttpParams();
+    params = params.append("noteId", noteId);
+    return this.httpClient.get(this.base_url + "notes/delete", { params : params }).pipe();
+  }
+
+  public submitWeekForApproved(weekNumber : number) : Observable<any> {
+    let params : HttpParams = new HttpParams();
+    params = params.append("currentWeekNumber", weekNumber);
+    return this.httpClient.get(this.base_url + "notes/submit_week_for_approved", { params : params }).pipe();
+  }
+
+  public getNoteSummaryPerMonth(request : NoteSummaryRequestDto) : Observable<any> {
+    return this.httpClient.post(this.base_url + "notes/note_summary", request).pipe();
+  }
+
+  public getCheckInSummaryPerMonth(request : CheckInRequestDto) : Observable<any> {
+    return this.httpClient.post(this.base_url + "checkin/checkin_per_month", request).pipe();
+  }
+
+  public getNumberOfEmployeeOpenTalks(request : CheckInRequestDto) : Observable<any> {
+    return this.httpClient.post(this.base_url + "notes/open_talk_count", request).pipe();
+  }
+
+  public saveCheckpointTime(employeeId : number) : Observable<any> {
+    let params : HttpParams = new HttpParams();
+    params = params.append("employeeId", employeeId);
+    params = params.append("checkPointTime", new Date().toISOString());
+    return this.httpClient.get(this.base_url + "checkin/save_checkpoint_time", { params : params }).pipe();
   }
 
 }

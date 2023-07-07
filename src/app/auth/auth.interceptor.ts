@@ -70,6 +70,7 @@ export class AuthInterceptor implements HttpInterceptor {
             this.cookieService.set("TimesheetAppToken", response.accessToken);
             // this.cookieService.set("TimesheetAppRefreshToken", response.refreshToken);
             this.cookieService.set("TimesheetAppUsername", response.username);
+            this.cookieService.set("TimesheetAppEmployeeId", response.employeeId);
             this.refreshTokenSubject.next(response.accessToken);
             return next.handle(this.addTokenHeader(request, response.accessToken));
           }),

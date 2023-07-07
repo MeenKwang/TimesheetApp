@@ -22,7 +22,10 @@ export class HomeComponent implements OnInit {
   }
 
   logout() {
-    this.cookieService.deleteAll();
+    this.cookieService.delete("TimesheetAppToken");
+    this.cookieService.delete("TimesheetAppRefreshToken");
+    this.cookieService.delete("TimesheetAppUsername");
+    this.cookieService.delete("TimesheetAppEmployeeId");
     this.router.navigate(["login"]);
   }
 

@@ -1,5 +1,5 @@
 
-import { ChangeDetectorRef, Component, OnChanges, OnInit, SimpleChanges } from '@angular/core';
+import { Component, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 import { MomentDateAdapter } from '@angular/material-moment-adapter';
 import { DateAdapter, MAT_DATE_FORMATS, MAT_DATE_LOCALE } from '@angular/material/core';
 import { MatTabChangeEvent } from '@angular/material/tabs';
@@ -7,9 +7,15 @@ import { TimesheetService } from '../service/timesheet/timesheet.service';
 import { MatDialog } from '@angular/material/dialog';
 import { TimesheetDialogComponent } from './timesheet-dialog/timesheet-dialog.component';
 import { CookieService } from 'ngx-cookie-service';
-import { NoteViewDto } from '../model/note-view-dto';
-import { BehaviorSubject, switchMap } from 'rxjs';
 import { NotesPerDayDto } from '../model/notes-per-day-dto';
+import { ConfirmDialogComponent } from './confirm-dialog/confirm-dialog.component';
+import { CheckInRequestDto } from '../model/check-in-request-dto';
+import { NoteSummaryRequestDto } from '../model/note-summary-request-dto';
+import { CheckInDto } from '../model/check-in-dto';
+import { NoteFormDto } from '../model/note-form-dto';
+import { SummaryDto } from '../model/summary-dto';
+import { NoteSummaryDto } from '../model/note-summary-dto';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 const MY_DATE_FORMAT = {
   parse: {
@@ -23,6 +29,12 @@ const MY_DATE_FORMAT = {
   }
 };
 
+export enum TimeSheetStatus {
+  NEW = "NEW",
+  PENDING = "PENDING",
+  APPROVED = "APPROVED",
+  REJECT  = "REJECT",
+}
 
 @Component({
   selector: 'app-my-timesheet',
@@ -36,15 +48,14 @@ const MY_DATE_FORMAT = {
 export class MyTimesheetComponent implements OnInit, OnChanges {
 
   daysArray = [{ label: 'Monday', value: 1 }, { label: 'Tuesday', value: 2 }, { label: 'Wednesday', value: 3 }, { label: 'Thursday', value: 4 }, { label: 'Friday', value: 5 }, { label: 'Saturday', value: 6 }, { label: 'Sunday', value: 0 }];
-  daysArraySummary = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  daysArraySummary = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   monthsArray = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   selectedDate = new Date();
   selectedDay = this.selectedDate.getDay();
   selectedDayIndex = this.getSelectedDayIndex();
-  selectedMonthSummary!: number | any;
   dateString: String = '';
-  dates: Date[] = [];
+  dates: SummaryDto[] = [];
 
   notesPerDayDtos: NotesPerDayDto[] = [];
 
@@ -52,20 +63,30 @@ export class MyTimesheetComponent implements OnInit, OnChanges {
 
   weekNumber: number = this.getWeekNumberOfSelectedDate(new Date());
 
+  monthSummary : number = this.selectedDate.getMonth();
+  yearSummary : number = this.selectedDate.getFullYear();
+  statusSummary : string = 'All';
+  checkInRequestDto : CheckInRequestDto = {};
+  noteSummaryRequestDto : NoteSummaryRequestDto = {};
+  checkInDtoList : CheckInDto[] = [];
+  noteSummaryDtoList : NoteSummaryDto[] = [];
+
+  totalHours : number = 0;
+  totalOpentalks : number = 0;
+
   constructor(
     private timesheetService: TimesheetService,
     public dialog: MatDialog,
-    private cookieService: CookieService
+    private cookieService: CookieService,
+    private snackBar : MatSnackBar
   ) { }
   ngOnChanges(changes: SimpleChanges): void {
     console.log("Jump to onChanges");
   }
 
   ngOnInit(): void {
-    this.selectedMonthSummary = this.selectedDate.getMonth();
-    this.dates = this.getAllDatesInMonth(this.selectedDate.getFullYear(), this.selectedDate.getMonth());
     this.loadTimesheet();
-    console.log("init ok");
+    this.initSummary();
   }
 
   loadTimesheet() {
@@ -78,6 +99,18 @@ export class MyTimesheetComponent implements OnInit, OnChanges {
       },
       complete: () => { }
     });
+  }
+
+  initSummary() {
+    this.dates = this.getAllDatesInMonth(this.yearSummary, this.monthSummary);
+    this.checkInRequestDto.employeeId = Number(this.cookieService.get("TimesheetAppEmployeeId"));
+    this.checkInRequestDto.month = this.monthSummary + 1;
+    this.checkInRequestDto.year = this.yearSummary;
+    this.noteSummaryRequestDto.employeeId = Number(this.cookieService.get("TimesheetAppEmployeeId"));
+    this.noteSummaryRequestDto.month = this.monthSummary + 1;
+    this.noteSummaryRequestDto.year = this.yearSummary;
+    this.noteSummaryRequestDto.statuses = [TimeSheetStatus.APPROVED, TimeSheetStatus.NEW, TimeSheetStatus.PENDING, TimeSheetStatus.REJECT]
+    this.findSummary(undefined);
   }
 
   getNotesPerDay(index : any) {
@@ -128,14 +161,18 @@ export class MyTimesheetComponent implements OnInit, OnChanges {
     this.checkLoadTimesheet();
   }
 
-  getAllDatesInMonth(year: number, month: number): Date[] {
+  getAllDatesInMonth(year: number, month: number): SummaryDto[] {
     const firstDayOfMonth = new Date(year, month, 1);
     const lastDayOfMonth = new Date(year, month + 1, 0);
 
-    const dates = [];
+    const dates : SummaryDto[] = [];
 
-    for (let date = firstDayOfMonth; date <= lastDayOfMonth; date.setDate(date.getDate() + 1)) {
-      dates.push(new Date(date));
+    for(let i = firstDayOfMonth; i <= lastDayOfMonth; i.setDate(i.getDate() + 1)) {
+      dates.push({
+        date : new Date(i),
+        checkInDto : null,
+        noteSummaryDto : null
+      });
     }
 
     return dates;
@@ -181,26 +218,149 @@ export class MyTimesheetComponent implements OnInit, OnChanges {
   }
 
   showTimesheetForm(item : number | undefined) {
-    this.timesheetService.getEmployeeId().subscribe({
-      next: (response) => {
-        const dialogRef = this.dialog.open(TimesheetDialogComponent, {
-          data: { noteId : item , employeeId : response },
-        });
-    
-        dialogRef.afterClosed().subscribe(result => {
-          console.log("Dialog closed!");
-        });
-        
-      },
-      error: (error) => {
-        console.log(error);
-        return;
+    const dialogRef = this.dialog.open(TimesheetDialogComponent, {
+      data: { noteId : item , employeeId : this.cookieService.get("TimesheetAppEmployeeId") , selectedDate : this.selectedDate },
+    });
+
+    dialogRef.afterClosed().subscribe({
+      complete : () => {
+        this.loadTimesheet();
       }
     });
   }
 
-  showDeleteNotify() {
-    
+  showDeleteNotify(item : number | undefined) {
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      data: { noteId : item },
+    });
+
+    dialogRef.afterClosed().subscribe({
+      complete : () => {
+        this.loadTimesheet();
+      }
+    });
+  }
+
+  submitWeekForApproved() {
+    this.timesheetService.submitWeekForApproved(this.weekNumber).subscribe({
+      next : (response) => {
+        console.log(response);
+      },
+      error : (error) => {
+        console.log(error);
+        
+      },
+      complete : () => {
+        this.ngOnInit();
+      }
+    })
+  }
+
+  findSummary(type : any) {
+    this.totalHours = 0;
+    this.totalOpentalks = 0;
+    if(type === 'STATUS') {
+      switch (this.statusSummary) {
+        case 'All': {
+          this.noteSummaryRequestDto.statuses = [TimeSheetStatus.APPROVED, TimeSheetStatus.NEW, TimeSheetStatus.PENDING, TimeSheetStatus.REJECT];
+          break;
+        }
+        case 'New': {
+          this.noteSummaryRequestDto.statuses = [TimeSheetStatus.NEW];
+          break;
+        }
+        case 'Pending or Approved': {
+          this.noteSummaryRequestDto.statuses = [TimeSheetStatus.APPROVED, TimeSheetStatus.PENDING];
+          break;
+        }
+        case 'Pending': {
+          this.noteSummaryRequestDto.statuses = [TimeSheetStatus.PENDING];
+          break;
+        }
+        case 'Approved': {
+          this.noteSummaryRequestDto.statuses = [TimeSheetStatus.APPROVED];
+          break;
+        }
+        case 'Rejected': {
+          this.noteSummaryRequestDto.statuses = [TimeSheetStatus.REJECT];
+          break;
+        }
+      }
+    }
+    if(type === 'YEAR') {
+      this.checkInRequestDto.year = this.yearSummary;
+      this.noteSummaryRequestDto.year = this.yearSummary;
+    }
+    if(type == 'MONTH') {
+      this.checkInRequestDto.month = this.monthSummary + 1;
+      this.noteSummaryRequestDto.month = this.monthSummary + 1;
+    }
+
+    this.dates = this.getAllDatesInMonth(this.yearSummary, this.monthSummary);
+
+    this.timesheetService.getCheckInSummaryPerMonth(this.checkInRequestDto).subscribe({
+      next : (response) => {
+        this.checkInDtoList = response;
+        this.checkInDtoList.forEach((entry) => {
+          const date = new Date(entry.checkInTime[0], entry.checkInTime[1], entry.checkInTime[2], entry.checkInTime[3], entry.checkInTime[4]).getDate();
+          this.dates[date - 1].checkInDto = entry;
+        });
+      },
+      error : (error) => {
+
+      },
+      complete : () => {
+
+      }
+    });
+
+    this.timesheetService.getNoteSummaryPerMonth(this.noteSummaryRequestDto).subscribe({
+      next : (response) => {
+        this.noteSummaryDtoList = response;
+        this.noteSummaryDtoList.forEach((entry) => {
+          this.totalHours += entry.totalHours;
+          const date = new Date(entry.date[0], entry.date[1], entry.date[2]).getDate();
+          this.dates[date - 1].noteSummaryDto = entry;
+        });
+      },
+      error : (error) => {
+
+      }, 
+      complete : () => {
+
+      }
+    });
+
+    this.timesheetService.getNumberOfEmployeeOpenTalks(this.checkInRequestDto).subscribe({
+      next : (response) => {
+        this.totalOpentalks = response;
+      },
+      error : (error) => {
+
+      },
+      complete : () => {
+
+      }
+    })
+  }
+
+  saveCheckpointTime() {
+    this.timesheetService.saveCheckpointTime(Number(this.cookieService.get("TimesheetAppEmployeeId"))).subscribe({
+      next : (response) => {
+        if(response === true) {
+          this.snackBar.open("Checkpoint sucessfully!", "OK");
+        } else {
+          this.snackBar.open("Checkpoint failed!", "OK");
+        }
+      },
+      error : (error) => {
+        this.snackBar.open("Checkpoint failed!", "OK");
+      }
+    });
+  }
+
+  refresh() {
+    window.location.reload();
   }
 
 }
