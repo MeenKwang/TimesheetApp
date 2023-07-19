@@ -8,6 +8,7 @@ import { NoteSummaryRequestDto } from 'src/app/model/note-summary-request-dto';
 import { NotesPerDayDto } from 'src/app/model/notes-per-day-dto';
 import { ProjectSelectDto } from 'src/app/model/project-select-dto';
 import { TaskSelectDto } from 'src/app/model/task-select-dto';
+import { TimeSheetStatus } from 'src/app/my-timesheet/timesheet-dialog/timesheet-dialog.component';
 
 @Injectable({
   providedIn: 'root'
@@ -20,9 +21,9 @@ export class TimesheetService {
     private httpClient: HttpClient
   ) { }
 
-  public getTimesheetByWeek(username : string, weekNumber: number) : Observable<Object> {
+  public getTimesheetByWeek(employeeId : number, weekNumber: number) : Observable<Object> {
     let params : HttpParams = new HttpParams();
-    params = params.append("username", username);
+    params = params.append("employeeId", employeeId);
     params = params.append("weekNumber", weekNumber);
     return this.httpClient.get(this.base_url + "notes/notes_by_week", {params : params}).pipe();
   }
@@ -82,6 +83,22 @@ export class TimesheetService {
     params = params.append("employeeId", employeeId);
     params = params.append("checkPointTime", new Date().toISOString());
     return this.httpClient.get(this.base_url + "checkin/save_checkpoint_time", { params : params }).pipe();
+  }
+
+  public getStaffTimesheetByTime(staffId : number, month : number, year : number) : Observable<any> {
+    let params : HttpParams = new HttpParams();
+    params = params.append("staffId", staffId);
+    params = params.append("month", month + 1);
+    params = params.append("year", year);
+    return this.httpClient.get(this.base_url + "notes/staff_timesheet_by_month", { params : params }).pipe();
+  }
+  
+  public updateStaffTimesheetStatus(noteId : number, status : TimeSheetStatus) {
+    console.log(noteId);
+    let params : HttpParams = new HttpParams();
+    params = params.append("noteId", noteId);
+    params = params.append("status", status);
+    return this.httpClient.put(this.base_url + "notes/update_staff_timesheet_status", null, {params : params}).pipe();
   }
 
 }

@@ -1,52 +1,40 @@
 <div style="width: 1000px; justify-content: center;">
-    <div style="display: flex; justify-content: space-between;">
-      <h1 mat-dialog-title>All Absence Request On {{this.data.date | date: "dd-MM-yyyy"}}</h1>
-      <button mat-raised-button color="primary" (click)="addAbsenceRequestToArray()">Add new quest</button>
-    </div>
-    <mat-dialog-content class="m-3">
+    <h1 mat-dialog-title>All Absence Request On {{this.data.date | date: "dd-MM-yyyy"}}</h1>
+    <mat-dialog-content>
       <table class="table table-striped">
         <thead>
-          <th>STT</th>
-          <th>Request</th>
-          <th>Off Type</th>
-          <th>Type Time Off</th>
-          <th>Note</th>
-          <th>Time Off</th>
-          <th>Status</th>
-          <th>Action</th>
+          <tr>
+            <th scope="col">STT</th>
+            <th scope="col">Request</th>
+            <th scope="col">Off Type</th>
+            <th scope="col">Note</th>
+            <th scope="col">Status</th>
+            <th scope="col">Action</th>
+          </tr>
         </thead>
-        <ng-container [formGroup]="orderForm">
-        <tbody formArrayName="items" *ngFor="let absenceItem of absenceItems.controls; let i = index">
-          <ng-container [formGroupName]="i">
-            <th>
-                <span>{{i + 1}}</span>
-            </th>
-            <th>
-                <input type="text" id="request" class="form-control" formControlName="absenceType"/>
-            </th>
-            <th>
-                <input type="text" id="offType" class="form-control" formControlName="absenceTypeOff"/>
-            </th>
-            <th>
-                <input type="text" id="offType" class="form-control" formControlName="typeTimeOff"/>
-            </th>
-            <th>
-                <input type="text" id="note" class="form-control" formControlName="reason"/>
-            </th>
-            <th>
-                <input type="text" id="note" class="form-control" formControlName="timeOff"/>
-            </th>
-            <th>
-              <span class="badge bg-success">Approved</span>
-            </th>
-            <th>
-              <button type="button" class="btn btn-primary">Edit</button>
-              &nbsp;
-              <button type="button" class="btn btn-danger">Delete</button>
-            </th>
+        <tbody>
+          <ng-container *ngFor="let item of absenceViewDto; let i = index">
+            <tr>
+              <th scope="row">{{i + 1}}</th>
+              <td scope="row">
+                <span>{{item.absenceType}}</span>
+                &nbsp;
+                <span *ngIf="item.typeTimeOff !== 'COME_LATE' && item.typeTimeOff !== 'WENT_SOON'">{{item.typeTimeOff}}</span>
+                <span *ngIf="item.typeTimeOff === 'COME_LATE' || item.typeTimeOff === 'WENT_SOON'">{{item.timeOff}}</span>
+              </td>
+              <td scope="row">{{item.absenceTypeOff}}</td>
+              <td scope="row">{{item.reason}}</td>
+              <td scope="row">{{item.status}}</td>
+              <td scope="row">
+                <ng-container *ngIf="item.status !== 'APPROVED' && item.status !== 'REJECTED'">
+                  <button mat-raised-button color="primary" (click)="editAbsenceRequest(item.id, item.absenceType)">Edit</button>
+                  &nbsp;
+                  <button *ngIf="item.status === 'PENDING'" mat-raised-button color="warn" (click)="deleteAbsenceRequest(item.id, item.status)">Delete</button>
+                </ng-container>
+              </td>
+            </tr>
           </ng-container>
         </tbody>
-      </ng-container>
       </table>
     </mat-dialog-content>
   </div>

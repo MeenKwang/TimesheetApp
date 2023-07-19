@@ -1,7 +1,11 @@
 import { Component, Inject, OnInit } from '@angular/core';
 import { FormArray, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
-import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { TimesheetService } from 'src/app/service/timesheet/timesheet.service';
+import { MatDialogRef, MAT_DIALOG_DATA, MatDialog } from '@angular/material/dialog';
+import { CookieService } from 'ngx-cookie-service';
+import { AbsenceViewDto } from 'src/app/model/absence-view-dto';
+import { AbsenceService } from 'src/app/service/absence/absence.service';
+import { AbsenceFormDialogComponent } from '../absence-form-dialog/absence-form-dialog.component';
+import { AbsenceConfirmDialogComponent } from '../absence-confirm-dialog/absence-confirm-dialog.component';
 
 @Component({
   selector: 'app-absence-dialog',
@@ -11,48 +15,57 @@ import { TimesheetService } from 'src/app/service/timesheet/timesheet.service';
 export class AbsenceDialogComponent implements OnInit {
 
   orderForm!: FormGroup;
+  absenceViewDto!: AbsenceViewDto[];
+  
   constructor(
     private dialogRef: MatDialogRef<AbsenceDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: any,
-    private formBuilder: FormBuilder,
-    private timesheetService: TimesheetService,
+    private cookieService : CookieService,
+    private absenceService : AbsenceService,
+    private dialog: MatDialog,
   ) { }
 
   ngOnInit(): void {
-    
-    this.orderForm = this.formBuilder.group({
-      items: new FormArray([])
-    });
-    this.addAbsenceRequestToArray();
+    const date = this.data.date as Date;
+    this.listAllAbsenceRequestInThisDateOfEmployee(date, Number(this.cookieService.get("TimesheetAppEmployeeId")));
   }
 
-  createAbsenceRequest() : FormGroup {
-    return this.formBuilder.group({
-      absenceType : new FormControl({value : null, disabled : true}, Validators.required),
-      absenceTypeOff : new FormControl({value : null, disabled : true}, Validators.required),
-      typeTimeOff : new FormControl({value : null, disabled : true}, Validators.required),
-      timeOff : new FormControl({value : null, disabled : true}, Validators.required),
-      reason : new FormControl({value : null, disabled : true}, Validators.required),
-      timeRequest : new FormControl({value : null, disabled : true}, Validators.required),
-      disable : new FormControl({value : null, disabled : true})
+  listAllAbsenceRequestInThisDateOfEmployee(date : Date, employeeId : number) {
+    this.absenceService.listAllAbsenceRequestInThisDateOfEmployee(date, employeeId).subscribe({
+      next : (response) => {
+        this.absenceViewDto = response;
+        console.log(this.absenceViewDto);
+      }
     });
   }
 
-  addAbsenceRequestToArray() {
-    let items = this.orderForm.controls["items"] as FormArray;
-    items.push(this.createAbsenceRequest());
+  editAbsenceRequest(id : number | null, type : string | null) {
+    console.log(type);
+    const dialogRef = this.dialog.open(AbsenceFormDialogComponent, {
+      data: { employeeId : this.cookieService.get("TimesheetAppEmployeeId") , absenceId : id , type : type},
+    });
+    dialogRef.afterClosed().subscribe(
+      (response) => {
+        const date = this.data.date as Date;
+        this.listAllAbsenceRequestInThisDateOfEmployee(date, Number(this.cookieService.get("TimesheetAppEmployeeId")));
+      }
+    )
   }
 
-  get absenceItems() : FormArray {
-    return this.orderForm.controls["items"] as FormArray;
-  }
-
-  submitForm() {
-
-  }
-
-  onNoClick() {
-    this.dialogRef.close();
+  deleteAbsenceRequest(id : number | null, status : string | null) {
+    if(status) {
+      if(status === 'PENDING') {
+        const dialogRef = this.dialog.open(AbsenceConfirmDialogComponent, {
+          data: {absenceId : id}
+        });
+        dialogRef.afterClosed().subscribe(
+          (response) => {
+            const date = this.data.date as Date;
+            this.listAllAbsenceRequestInThisDateOfEmployee(date, Number(this.cookieService.get("TimesheetAppEmployeeId")));
+          }
+        )
+      }
+    }
   }
 
 }

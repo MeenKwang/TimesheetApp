@@ -16,7 +16,7 @@ export class ProfileService {
 
   getProfile() {
     let params: HttpParams = new HttpParams();
-    params = params.append("username", this.cookieService.get("TimesheetAppUsername"));
+    params = params.append("id", Number(this.cookieService.get("TimesheetAppEmployeeId")));
     return this.httpClient.get(this.base_url + "profile", {params : params});
   }
 }

@@ -64,11 +64,11 @@ export class AuthInterceptor implements HttpInterceptor {
 
       const refreshToken = this.authService.getOriginalRefreshToken();
       if(refreshToken) {
-        return this.authService.refreshToken(new RefreshTokenDto(refreshToken, this.cookieService.get("TimesheetAppToken"))).pipe(
+        return this.authService.refreshToken(new RefreshTokenDto(refreshToken)).pipe(
           switchMap((response : any) => {
             this.isRefreshing = false;
             this.cookieService.set("TimesheetAppToken", response.accessToken);
-            // this.cookieService.set("TimesheetAppRefreshToken", response.refreshToken);
+            this.cookieService.set("TimesheetAppRefreshToken", response.refreshToken);
             this.cookieService.set("TimesheetAppUsername", response.username);
             this.cookieService.set("TimesheetAppEmployeeId", response.employeeId);
             this.refreshTokenSubject.next(response.accessToken);

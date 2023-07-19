@@ -13,26 +13,49 @@ import {
   isSameMonth,
   addHours,
 } from 'date-fns';
-import { Subject } from 'rxjs';
+import { BehaviorSubject, Observable, Subject, map, of, tap } from 'rxjs';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import {
   CalendarEvent,
   CalendarEventAction,
   CalendarEventTimesChangedEvent,
+  CalendarMonthViewBeforeRenderEvent,
   CalendarMonthViewEventTimesChangedEvent,
   CalendarView,
+  DateAdapter,
 } from 'angular-calendar';
 import { EventColor } from 'calendar-utils';
 import { NgIf } from '@angular/common';
 import { MatDialogModule, MAT_DIALOG_DATA, MatDialog } from '@angular/material/dialog';
 import { AbsenceDialogComponent } from './absence-dialog/absence-dialog.component';
 import { CookieService } from 'ngx-cookie-service';
+import { MomentDateAdapter } from '@angular/material-moment-adapter';
+import { MAT_DATE_LOCALE, MAT_DATE_FORMATS } from '@angular/material/core';
+import { AbsenceFormDialogComponent, TypeTimeOff } from './absence-form-dialog/absence-form-dialog.component';
+import { AbsenceService } from '../service/absence/absence.service';
+import { HttpClient, HttpParams } from '@angular/common/http';
+
+const MY_DATE_FORMAT = {
+  parse: {
+    dateInput: 'DD-MM-YYYY', // this is how your date will be parsed from Input
+  },
+  display: {
+    dateInput: 'DD-MM-YYYY', // this is how your date will get displayed on the Input
+    monthYearLabel: 'MMMM YYYY',
+    dateA11yLabel: 'LL',
+    monthYearA11yLabel: 'MMMM YYYY'
+  }
+};
 
 @Component({
   selector: 'app-my-absence-day',
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './my-absence-day.component.html',
-  styleUrls: ['./my-absence-day.component.scss']
+  styleUrls: ['./my-absence-day.component.scss'],
+  providers: [
+    { provide: DateAdapter, useClass: MomentDateAdapter, deps: [MAT_DATE_LOCALE] },
+    { provide: MAT_DATE_FORMATS, useValue: MY_DATE_FORMAT }
+  ]
 })
 export class MyAbsenceDayComponent implements OnInit {
   view: CalendarView = CalendarView.Month;
@@ -41,14 +64,21 @@ export class MyAbsenceDayComponent implements OnInit {
 
   viewDate: Date = new Date();
 
-  events: CalendarEvent<any>[] = [];
+  currentMonth = this.viewDate.getMonth();
+
+  events$: Observable<CalendarEvent<any>[]> = new Observable<CalendarEvent<any>[]>();
+  
+  refresh = new BehaviorSubject<boolean>(false);
   
   constructor(
     private dialog: MatDialog,
-    private cookieService: CookieService
+    private cookieService: CookieService,
+    private absenceService: AbsenceService,
+    private http : HttpClient,
   ) { }
 
   ngOnInit(): void {
+    this.getAbsenceDaysListOfParticularMonth(this.viewDate);
   }
 
   dayClicked({ date, events }: { date: Date; events: CalendarEvent[] }): void {
@@ -57,11 +87,70 @@ export class MyAbsenceDayComponent implements OnInit {
     });
 
     dialogRef.afterClosed().subscribe({
-        next : (response) => console.log("OK")
+        next : (response) => {
+          this.getAbsenceDaysListOfParticularMonth(this.viewDate);
+          this.refresh.next(true);
+        }
     });
   }
 
-  closeOpenMonthViewDay() {
+  getAbsenceDaysListOfParticularMonth(date : Date) {
+    this.events$ = this.absenceService.getAbsenceDaysListOfParticularMonth(date.getMonth(), date.getFullYear(), Number(this.cookieService.get("TimesheetAppEmployeeId")))
+    .pipe(
+      tap((response: any) => console.log('Response:', response)),   
+      map((results: number[][]) => {
+        return results.map((dayArray: number[]) => {
+          return {
+            title: "Absence Request",
+            start: new Date(dayArray[0], dayArray[1] - 1, dayArray[2]),
+          };
+        });
+      })
+    );
+  }
+
+  updateCalendar(date : any) {
+    this.viewDate = date;
+    if(this.viewDate.getMonth() !== this.currentMonth) {
+      this.currentMonth = this.viewDate.getMonth();
+      this.getAbsenceDaysListOfParticularMonth(this.viewDate);
+    }
+  }
+
+  openAbsenceForm(type : string) {
+    console.log(type);
+    let typeTimeOff = null;
+    if(type === "WENT_SOON") {
+      typeTimeOff = "WENT_SOON";
+    }
+    if(type === "COME_LATE") {
+      typeTimeOff = "COME_LATE";
+    } 
+    const dialogRef = this.dialog.open(AbsenceFormDialogComponent, {
+      data: { employeeId : this.cookieService.get("TimesheetAppEmployeeId") , type : type , typeTimeOff : typeTimeOff},
+    });
+    
+    dialogRef.afterClosed().subscribe({
+      next : (response) => {
+        const date = response as Date;
+        this.viewDate = date;
+        this.currentMonth = this.viewDate.getMonth();
+        this.events$ = this.absenceService.getAbsenceDaysListOfParticularMonth(response.getMonth(), response.getFullYear(), Number(this.cookieService.get("TimesheetAppEmployeeId")))
+        .pipe(
+          tap((response: any) => console.log('Response:', response)),   
+          map((results: number[][]) => {
+            return results.map((dayArray: number[]) => {
+              return {
+                title: "Absence Request",
+                start: new Date(dayArray[0], dayArray[1] - 1, dayArray[2]),
+              };
+            });
+          }),
+        )
+        this.refresh.next(true);
+      }
+    })
 
   }
+
 }

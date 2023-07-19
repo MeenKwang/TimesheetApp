@@ -12,7 +12,6 @@ import { ConfirmDialogComponent } from './confirm-dialog/confirm-dialog.componen
 import { CheckInRequestDto } from '../model/check-in-request-dto';
 import { NoteSummaryRequestDto } from '../model/note-summary-request-dto';
 import { CheckInDto } from '../model/check-in-dto';
-import { NoteFormDto } from '../model/note-form-dto';
 import { SummaryDto } from '../model/summary-dto';
 import { NoteSummaryDto } from '../model/note-summary-dto';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -90,7 +89,8 @@ export class MyTimesheetComponent implements OnInit, OnChanges {
   }
 
   loadTimesheet() {
-    this.timesheetService.getTimesheetByWeek(this.cookieService.get("TimesheetAppUsername"), this.getWeekNumberOfSelectedDate(this.selectedDate)).subscribe({
+    console.log(this.getWeekNumberOfSelectedDate(this.selectedDate));
+    this.timesheetService.getTimesheetByWeek(Number(this.cookieService.get("TimesheetAppEmployeeId")), this.getWeekNumberOfSelectedDate(this.selectedDate)).subscribe({
       next: (response: any) => {
         this.notesPerDayDtos = response;
       },

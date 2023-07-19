@@ -21,6 +21,10 @@ import { ForbiddenComponent } from './forbidden/forbidden.component';
 import { ConfirmDialogComponent } from './my-timesheet/confirm-dialog/confirm-dialog.component';
 import { AbsenceDialogComponent } from './my-absence-day/absence-dialog/absence-dialog.component';
 import { AbsenceFormDialogComponent } from './my-absence-day/absence-form-dialog/absence-form-dialog.component';
+import { AbsenceConfirmDialogComponent } from './my-absence-day/absence-confirm-dialog/absence-confirm-dialog.component';
+import { ManageTimesheetComponent } from './manage-home/manage-timesheet/manage-timesheet.component';
+import { ManageAbsenceComponent } from './manage-home/manage-absence/manage-absence.component';
+import { ManageHomeComponent } from './manage-home/manage-home.component';
 @NgModule({
   declarations: [
     AppComponent,
@@ -33,6 +37,10 @@ import { AbsenceFormDialogComponent } from './my-absence-day/absence-form-dialog
     ConfirmDialogComponent,
     AbsenceDialogComponent,
     AbsenceFormDialogComponent,
+    AbsenceConfirmDialogComponent,
+    ManageTimesheetComponent,
+    ManageAbsenceComponent,
+    ManageHomeComponent,
   ],
   imports: [
     BrowserModule,

@@ -42,6 +42,7 @@ export class LoginComponent implements OnInit {
         this.cookieService.set("TimesheetAppRefreshToken", response.refreshToken);
         this.cookieService.set("TimesheetAppUsername", response.email);
         this.cookieService.set("TimesheetAppEmployeeId", response.employeeId);
+        alert(this.cookieService.get("TimesheetAppEmployeeId"));
         this.router.navigate(["/home/timesheet"]);
         }
       }

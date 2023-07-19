@@ -7,6 +7,9 @@ import { LoginComponent } from './login/login.component';
 import { HomeComponent } from './home/home.component';
 import { AuthGuard } from './auth/auth.guard';
 import { ForbiddenComponent } from './forbidden/forbidden.component';
+import { ManageTimesheetComponent } from './manage-home/manage-timesheet/manage-timesheet.component';
+import { ManageAbsenceComponent } from './manage-home/manage-absence/manage-absence.component';
+import { ManageHomeComponent } from './manage-home/manage-home.component';
 
 const routes: Routes = [
   { path: '', redirectTo: "/login", pathMatch: "full"},
@@ -15,7 +18,11 @@ const routes: Routes = [
     children : [
       { path: 'timesheet', component: MyTimesheetComponent, canActivate: [AuthGuard], data: { roles: ["STAFF, INTERN"] }, },
       { path: 'profile', component: MyProfileComponent, canActivate: [AuthGuard], data: { roles: ["STAFF, INTERN"] }, },
-      { path: 'absence', component: MyAbsenceDayComponent, canActivate: [AuthGuard], data: { roles: ["STAFF, INTERN"] }, }
+      { path: 'absence', component: MyAbsenceDayComponent, canActivate: [AuthGuard], data: { roles: ["STAFF, INTERN"] }, },
+      { path: 'manage_home', component: ManageHomeComponent, canActivate: [AuthGuard], data: { roles: ["PM, HR"] }, children : [
+        { path: 'manage_timesheet', component: ManageTimesheetComponent, canActivate: [AuthGuard], data: { roles: ["PM, HR"] }, },
+        { path: 'manage_absence', component: ManageAbsenceComponent, canActivate: [AuthGuard], data: { roles: ["PM, HR"] }, }
+      ]},
     ]
   },
   { path: 'forbidden', component: ForbiddenComponent }
